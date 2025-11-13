@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  bot:
+    build: .
+    container_name: my_bot
+    restart: always
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    command: python main.py
+    volumes:
+      - .:/app  # чтобы можно было править код локально
+    networks:
+      - my_network
+
+  db:
+    image: postgres:16
+    container_name: my_postgres
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - my_network
+
+volumes:
+  postgres_data:
+
+networks:
+  my_network:

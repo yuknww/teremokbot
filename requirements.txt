@@ -1,3 +1,5 @@
 dotenv~=0.9.9
 python-dotenv~=1.2.1
 pyTelegramBotAPI~=4.29.1
+SQLAlchemy~=2.0.44
+psycopg2-binary
