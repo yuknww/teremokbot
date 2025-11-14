@@ -16,7 +16,7 @@ def registration_program(user: User, child: Child):
     program_id = user.data["program_id"]
 
     try:
-        # Проверяем, есть ли уже регистрация
+        # Проверяем существующую регистрацию
         existing_reg = (
             db.query(Registration)
             .filter(
@@ -28,11 +28,17 @@ def registration_program(user: User, child: Child):
         )
 
         if existing_reg:
-            logger.info(
-                f"Регистрация уже существует для child_id={child.id} на date_id={date_id}"
-            )
-            send_payment_info(user, child)  # если есть, сразу отправляем платёж
-            return
+            if existing_reg.payment_status != "completed":
+                logger.info(
+                    f"Регистрация существует, но платеж не завершён. Отправляем платёж для child_id={child.id}"
+                )
+                send_payment_info(user, child)
+            else:
+                logger.info(
+                    f"Ребёнок уже зарегистрирован child_id={child.id}, date_id={date_id}"
+                )
+                bot.send_message(user.telegram_id, f"Ребёнок уже зарегистрирован")
+            return  # выходим, новые записи не создаём
 
         # Создаём новую регистрацию
         uuid = random.randint(10000000, 99999999)
