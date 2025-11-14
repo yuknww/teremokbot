@@ -53,7 +53,7 @@ def registration_program(user: User, child: Child):
         logger.info(f"Создана регистрация child_id={child.id}, ticket_code={uuid}")
 
         # Отправка информации о платеже
-        send_payment_info(user, child)
+        send_payment_info(user, child, uuid)
 
     except IntegrityError as e:
         db.rollback()

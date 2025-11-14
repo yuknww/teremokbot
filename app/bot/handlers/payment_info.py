@@ -13,7 +13,7 @@ def payment_button(payment_url: str):
     return keyboard
 
 
-def send_payment_info(user: User, child: Child):
+def send_payment_info(user: User, child: Child, uuid):
     from app.web.init_payment import init
 
     db = Session()
@@ -24,7 +24,7 @@ def send_payment_info(user: User, child: Child):
         logger.info(f"Start payment info for {user}")
         try:
             payment_url = init(
-                order_id=int(reg.ticket_code),
+                order_id=int(uuid),
                 user_id=user.telegram_id,
                 phone=user.phone,
                 email=user.email,
