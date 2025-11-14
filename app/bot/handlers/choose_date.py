@@ -88,7 +88,9 @@ def choose_date(call: types.CallbackQuery):
         db.commit()
         data = check_phone_and_name(db, call.from_user.id)
         if data["name"] != "OK":
-            bot.send_message(call.message.chat.id, "Введите Ваше Имя и Фамилию")
+            bot.send_message(
+                call.message.chat.id, "Введите Ваше Имя и Фамилию (имя взрослого):"
+            )
             logger.info(f"Send question about name")
             update_user_state(db=db, telegram_id=call.from_user.id, state="parent_name")
         else:
@@ -135,7 +137,7 @@ def parent_phone(message: types.Message):
             )
         update_user_state(db=db, telegram_id=message.from_user.id, state="parent_email")
         bot.send_message(
-            message.chat.id, "Укажите адрес электронной почти для отправки чека:"
+            message.chat.id, "Укажите адрес электронной почты для отправки чека:"
         )
         logger.info(f"Send question about email")
     except Exception as e:
