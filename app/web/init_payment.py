@@ -73,7 +73,9 @@ def init(order_id: int, phone, user_id, email) -> str:
         payment_id = response_data.get("PaymentId")
 
         if not payment_id:
-            logger.error(f"Нет PaymentId в ответе TBank: {response_data}")
+            logger.error(
+                f"Нет PaymentId в ответе TBank: {response_data}, order_id: {order_id}"
+            )
             return "Error"
 
         payment_url = get_qr(payment_id)
