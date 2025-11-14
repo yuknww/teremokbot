@@ -28,16 +28,10 @@ def registration_program(user: User, child: Child):
         )
 
         if existing_reg:
-            if existing_reg.payment_status != "completed":
-                logger.info(
-                    f"Регистрация существует, но платеж не завершён. Отправляем платёж для child_id={child.id}"
-                )
-                send_payment_info(user, child)
-            else:
-                logger.info(
-                    f"Ребёнок уже зарегистрирован child_id={child.id}, date_id={date_id}"
-                )
-                bot.send_message(user.telegram_id, f"Ребёнок уже зарегистрирован")
+            logger.info(
+                f"Ребёнок уже зарегистрирован child_id={child.id}, date_id={date_id}"
+            )
+            bot.send_message(user.telegram_id, f"Ребёнок уже зарегистрирован")
             return  # выходим, новые записи не создаём
 
         # Создаём новую регистрацию
