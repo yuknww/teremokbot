@@ -30,7 +30,7 @@ def send_payment_info(user: User, child: Child):
                 email=user.email,
             )
         except Exception as e:
-            logger.error(f"Failed init payment: {e}")
+            logger.error(f"Failed init payment: {e} {e.args}")
 
         text = (
             f"Чтобы завершить регистрацию оплатите билет по кнопке ниже\n\n"

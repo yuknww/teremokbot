@@ -20,13 +20,14 @@ def get_qr(payment_id):
 
     if response.status_code == 200:
         response_data = response.json()
-        logger.info(f"Сформирован QR СБП {response_data["Data"]}")
-        return response_data["Data"]
+        qr_data = response_data.get("Data")
+        logger.info(f"Сформирован QR СБП {qr_data}")
+        return qr_data
     else:
         logger.error(
-            f"Ошибка при инициализации платежа, {response.status_code}/{response.text}"
+            f"Ошибка при формировании QR, {response.status_code}/{response.text}"
         )
-        return {"Status": "error", "text": response.text}
+        return None
 
 
 def init(order_id: int, phone, user_id, email) -> str:
@@ -36,7 +37,7 @@ def init(order_id: int, phone, user_id, email) -> str:
     data = {
         "TerminalKey": TERMINAL_KEY,
         "Amount": amount,
-        "OrderId": str(order_id),  # Более явное преобразование в строку
+        "OrderId": str(order_id),
         "Description": description,
         "Token": gen_token(amount=amount, description=description, order_id=order_id),
         "DATA": {
@@ -54,29 +55,35 @@ def init(order_id: int, phone, user_id, email) -> str:
                     "Quantity": 1,
                     "Amount": amount,
                     "Tax": "none",
-                    "PaymentMethod": "full_prepayment",  # Рекомендуемое доп. поле
-                    "PaymentObject": "service",  # Рекомендуемое доп. поле
+                    "PaymentMethod": "full_prepayment",
+                    "PaymentObject": "service",
                 }
             ],
         },
     }
 
-    response = requests.post(
-        url="https://securepay.tinkoff.ru/v2/Init",
-        json=data,
-        headers={"Content-Type": "application/json"},
-    )
-
-    if response.status_code == 200:
-        response_data = response.json()
-        payment_url = get_qr(response_data["PaymentId"])
-        # payment_url = response_data["PaymentURL"]
-
-        logger.info(f"USER_ID: {user_id} Сформирована ссылка на оплату {response_data}")
-        logger.info(f"user_id: {user_id} Отправлена ссылка на оплату")
-        return payment_url
-    else:
-        logger.error(
-            f"Ошибка при инициализации платежа, {response.status_code}/{response.text}"
+    try:
+        response = requests.post(
+            url="https://securepay.tinkoff.ru/v2/Init",
+            json=data,
+            headers={"Content-Type": "application/json"},
         )
+        response.raise_for_status()
+        response_data = response.json()
+        payment_id = response_data.get("PaymentId")
+
+        if not payment_id:
+            logger.error(f"Нет PaymentId в ответе TBank: {response_data}")
+            return "Error"
+
+        payment_url = get_qr(payment_id)
+        if not payment_url:
+            logger.error(f"Не удалось получить QR для PaymentId={payment_id}")
+            return "Error"
+
+        logger.info(f"USER_ID: {user_id} Сформирована ссылка на оплату {payment_url}")
+        return payment_url
+
+    except requests.RequestException as e:
+        logger.error(f"Ошибка при инициализации платежа: {e}")
         return "Error"
