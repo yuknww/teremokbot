@@ -24,21 +24,21 @@ ALLOWED_NETWORKS = [
 ]
 
 
-# def is_ip_allowed(ip):
-#     """Проверяет, принадлежит ли IP разрешённой подсети."""
-#     from ipaddress import ip_network, ip_address
-#
-#     for network in ALLOWED_NETWORKS:
-#         if ip_address(ip) in ip_network(network, strict=False):
-#             return True
-#     return False
-#
-#
-# @app.before_request
-# def restrict_by_ip():
-#     client_ip = request.remote_addr  # Или get_client_ip() из прошлых примеров
-#     if not is_ip_allowed(client_ip):
-#         abort(403)
+def is_ip_allowed(ip):
+    """Проверяет, принадлежит ли IP разрешённой подсети."""
+    from ipaddress import ip_network, ip_address
+
+    for network in ALLOWED_NETWORKS:
+        if ip_address(ip) in ip_network(network, strict=False):
+            return True
+    return False
+
+
+@web_bp.before_request
+def restrict_by_ip():
+    client_ip = request.remote_addr  # Или get_client_ip() из прошлых примеров
+    if not is_ip_allowed(client_ip):
+        abort(403)
 
 
 @web_bp.route("/")

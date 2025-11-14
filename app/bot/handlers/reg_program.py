@@ -5,6 +5,7 @@ from app.bot.middlewares.logger import logger
 from app.loader import bot
 from app.db.models import Session, User, Registration, Child
 from telebot import types
+from psycopg2.errors import UniqueViolation
 
 
 def registration_program(user: User, child: Child):
@@ -21,9 +22,11 @@ def registration_program(user: User, child: Child):
         )
         db.add(new_reg)
         db.commit()
+    except UniqueViolation as e:
+        logger.error(f"Уже есть в таблице {e}")
+        send_payment_info(user, child)
     except Exception as e:
-        logger.error(f"Возникла ошибка при добавлении в таблицу Registrations {e}")
-
+        logger.error(f"Возникла ошибка при добавлении в таблицу registrations {e}")
     try:
         send_payment_info(user, child)
     except Exception as e:
