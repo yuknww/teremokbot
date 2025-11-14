@@ -51,48 +51,51 @@ def get_event_message(date_id: int, session: Session):
 
 def process_successful_payment(data):
     db = Session()
-    logger.info(f"Start successful payment")
-    uuid = str(data["OrderId"])
-    reg: Registration = (
-        db.query(Registration).filter(Registration.ticket_code == uuid).first()
-    )
-    child = db.query(Child).filter(Child.id == reg.child_id).first()
-    user = db.query(User).filter(User.id == Child.user_id).first()
-    user_id = int(user.telegram_id)
+    try:
+        logger.info(f"Start successful payment")
+        uuid = str(data["OrderId"])
+        reg: Registration = (
+            db.query(Registration).filter(Registration.ticket_code == uuid).first()
+        )
+        child = db.query(Child).filter(Child.id == reg.child_id).first()
+        user = db.query(User).filter(User.id == Child.user_id).first()
+        user_id = int(user.telegram_id)
 
-    reg.payment_status = "completed"
+        reg.payment_status = "completed"
 
-    update_user_state(db=db, telegram_id=user_id, state="registered")
-    path_ticket = qrcodegen(uuid)
+        update_user_state(db=db, telegram_id=user_id, state="registered")
+        path_ticket = qrcodegen(uuid)
 
-    with open(path_ticket, "rb") as photo:
-        bot.send_photo(user_id, photo)
-        logger.info(f"user_id: {user_id} отправлен билет {uuid}")
+        with open(path_ticket, "rb") as photo:
+            bot.send_photo(user_id, photo)
+            logger.info(f"user_id: {user_id} отправлен билет {uuid}")
 
-    text = (
-        f"Всё готово!\n"
-        f"Сохраните свой билет, его нужно будет показать на входе\n\n"
-        f"{get_event_message(date_id=reg.date_id, session=db)}\n\n"
-        f"🔔Информация о мероприятии в нашем Telegram-канале: @teremok_vyazma\n\n"
-        f"❓Если у тебя остались вопросы, можешь написать администратору - @yuknww\n\n"
-    )
-    bot.send_message(user_id, text)
-    logger.info(
-        f"user_id: {user_id} отправлена информация после подтверждения регистрации"
-    )
+        text = (
+            f"Всё готово!\n"
+            f"Сохраните свой билет, его нужно будет показать на входе\n\n"
+            f"{get_event_message(date_id=reg.date_id, session=db)}\n\n"
+            f"🔔Информация о мероприятии в нашем Telegram-канале: @teremok_vyazma\n\n"
+            f"❓Если у тебя остались вопросы, можешь написать администратору - @yuknww\n\n"
+        )
+        bot.send_message(user_id, text)
+        logger.info(
+            f"user_id: {user_id} отправлена информация после подтверждения регистрации"
+        )
 
-    new_reg_text = (
-        f"Новая регистрация:\n\n"
-        f"Имя: {user.full_name}\n"
-        f"Имя ребёнка: {child.child_name}\n"
-        f"Возраст: {child.birth_date}\n"
-        f"Телефон: {user.phone}\n"
-        f"ID: {user.telegram_id}"
-        f"Код регистрации: {uuid}"
-    )
+        new_reg_text = (
+            f"Новая регистрация:\n\n"
+            f"Имя: {user.full_name}\n"
+            f"Имя ребёнка: {child.child_name}\n"
+            f"Возраст: {child.birth_date}\n"
+            f"Телефон: {user.phone}\n"
+            f"ID: {user.telegram_id}"
+            f"Код регистрации: {uuid}"
+        )
 
-    for admin in ADMIN_ID:
-        bot.send_message(admin, new_reg_text)
-    logger.info(
-        f"Регистрация user_id: {user_id} с uuid: {uuid} подтверждена и внесена в таблицу"
-    )
+        for admin in ADMIN_ID:
+            bot.send_message(admin, new_reg_text)
+        logger.info(
+            f"Регистрация user_id: {user_id} с uuid: {uuid} подтверждена и внесена в таблицу"
+        )
+    finally:
+        db.close()

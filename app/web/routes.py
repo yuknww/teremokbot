@@ -110,6 +110,8 @@ def handle_callback():
     except Exception as e:
         logger.critical(f"Critical error in callback handler: {str(e)}")
         return "SERVER ERROR", 500
+    finally:
+        db.close()
 
 
 # if __name__ == "__main__":
