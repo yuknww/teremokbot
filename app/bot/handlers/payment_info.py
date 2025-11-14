@@ -53,8 +53,9 @@ def send_payment_info(user: User, child: Child):
             f"user_id: {user.telegram_id} отправлена информация об оплате, бот ожидает оплату"
         )
     except Exception as err:
+        logger.error(f"Send payment info error: {err}")
         bot.send_message(
-            user.telegram_id, "Возникла ошибка, свяжитесь с администратором @yuknww "
+            user.telegram_id, "Возникла ошибка, свяжитесь с администратором @yuknww"
         )
     finally:
         db.close()
