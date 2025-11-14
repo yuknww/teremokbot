@@ -32,12 +32,6 @@ def send_payment_info(user: User, child: Child):
         except Exception as e:
             logger.error(f"Failed init payment: {e}")
 
-        if payment_url == "Error":
-            bot.send_message(
-                user.telegram_id,
-                f"Возникла проблема с получением ссылки на оплату\n\n Свяжитесь, пожалуйста, c администратором - @yuknww",
-            )
-
         text = (
             f"Чтобы завершить регистрацию оплатите билет по кнопке ниже\n\n"
             f"Если возникла проблема с оплатой, обратитесь к администратору - @yuknww\n\n"
