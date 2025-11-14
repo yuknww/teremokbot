@@ -1,5 +1,7 @@
 import random
 
+from sqlalchemy.exc import IntegrityError
+
 from app.bot.handlers.payment_info import send_payment_info
 from app.bot.middlewares.logger import logger
 from app.loader import bot
@@ -12,8 +14,28 @@ def registration_program(user: User, child: Child):
     db = Session()
     date_id = user.data["date_id"]
     program_id = user.data["program_id"]
-    uuid = random.randint(10000000, 99999999)
+
     try:
+        # Проверяем, есть ли уже регистрация
+        existing_reg = (
+            db.query(Registration)
+            .filter(
+                Registration.child_id == child.id,
+                Registration.date_id == date_id,
+                Registration.program_id == program_id,
+            )
+            .first()
+        )
+
+        if existing_reg:
+            logger.info(
+                f"Регистрация уже существует для child_id={child.id} на date_id={date_id}"
+            )
+            send_payment_info(user, child)  # если есть, сразу отправляем платёж
+            return
+
+        # Создаём новую регистрацию
+        uuid = random.randint(10000000, 99999999)
         new_reg = Registration(
             child_id=child.id,
             date_id=date_id,
@@ -22,12 +44,16 @@ def registration_program(user: User, child: Child):
         )
         db.add(new_reg)
         db.commit()
-    except UniqueViolation as e:
-        logger.error(f"Уже есть в таблице {e}")
+        logger.info(f"Создана регистрация child_id={child.id}, ticket_code={uuid}")
+
+        # Отправка информации о платеже
         send_payment_info(user, child)
+
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"IntegrityError при добавлении в registrations: {e}")
     except Exception as e:
-        logger.error(f"Возникла ошибка при добавлении в таблицу registrations {e}")
-    try:
-        send_payment_info(user, child)
-    except Exception as e:
-        logger.error(f"Возникла ошибка при отправке информации о платеже {e}")
+        db.rollback()
+        logger.error(f"Ошибка при регистрации: {e}")
+    finally:
+        db.close()

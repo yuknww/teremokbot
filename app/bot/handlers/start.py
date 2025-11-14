@@ -33,38 +33,46 @@ def start(message: Message):
 ❗ После покупки *билет не подлежит возврату*"""
 
     db = Session()
-    user = get_user_by_telegram_id(db=db, telegram_id=message.from_user.id)
-    markup = gen_program_keyboard()
-    if user:
-        bot.send_message(
-            message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
-        )
-    else:
-        bot.send_message(
-            message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
-        )
-        create_user(db=db, telegram_id=message.from_user.id)
+    try:
+        user = get_user_by_telegram_id(db=db, telegram_id=message.from_user.id)
+        markup = gen_program_keyboard()
+        if user:
+            bot.send_message(
+                message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
+            )
+        else:
+            bot.send_message(
+                message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
+            )
+            create_user(db=db, telegram_id=message.from_user.id)
+    finally:
+        db.close()
 
 
 def gen_program_keyboard():
     db = Session()
-    # Получаем список программ из таблицы programs
-    programs = db.query(Program).all()
+    try:
+        # Получаем список программ из таблицы programs
+        programs = db.query(Program).all()
 
-    markup = types.InlineKeyboardMarkup()
+        markup = types.InlineKeyboardMarkup()
 
-    # Создаем кнопку для каждой программы
-    for program in programs:
-        markup.add(
-            types.InlineKeyboardButton(
-                program.name, callback_data=f"program_{program.id}"
+        # Создаем кнопку для каждой программы
+        for program in programs:
+            markup.add(
+                types.InlineKeyboardButton(
+                    program.name, callback_data=f"program_{program.id}"
+                )
             )
+
+        # Добавляем кнопку "Мои билеты"
+        markup.add(
+            types.InlineKeyboardButton("🎟 Мои билеты", callback_data="my_tickets")
         )
 
-    # Добавляем кнопку "Мои билеты"
-    markup.add(types.InlineKeyboardButton("🎟 Мои билеты", callback_data="my_tickets"))
-
-    return markup
+        return markup
+    finally:
+        db.close()
 
 
 MONTH_NAMES = {
@@ -91,41 +99,44 @@ def format_date(dt: datetime):
 def show_my_tickets(callback_query):
     telegram_id = callback_query.from_user.id
     db = Session()
-    user = db.query(User).filter_by(telegram_id=telegram_id).first()
-    if not user:
-        bot.answer_callback_query(callback_query.id, "Вы не зарегистрированы.")
-        return
+    try:
+        user = db.query(User).filter_by(telegram_id=telegram_id).first()
+        if not user:
+            bot.answer_callback_query(callback_query.id, "Вы не зарегистрированы.")
+            return
 
-    messages = []
-    for child in user.children:
-        for reg in child.registrations:
-            program_name = reg.program.name
-            date_str = format_date(reg.date_slot.date)
-            time_str = reg.date_slot.time.strftime("%H:%M")
-            child_name = child.child_name
-            ticket_code = reg.ticket_code
+        messages = []
+        for child in user.children:
+            for reg in child.registrations:
+                program_name = reg.program.name
+                date_str = format_date(reg.date_slot.date)
+                time_str = reg.date_slot.time.strftime("%H:%M")
+                child_name = child.child_name
+                ticket_code = reg.ticket_code
 
-            text = f"Ребёнок: {child_name}\nПрограмма: {program_name}\nДата и время: {date_str}, в {time_str}"
-            markup = types.InlineKeyboardMarkup()
-            if ticket_code:
-                ticket_path = os.path.join(TICKETS_FOLDER, f"{ticket_code}.png")
-                if os.path.exists(ticket_path):
-                    btn = types.InlineKeyboardButton(
-                        "Показать билет", callback_data=f"show_ticket_{ticket_code}"
-                    )
-                    markup.add(btn)
-            messages.append((text, markup))
+                text = f"Ребёнок: {child_name}\nПрограмма: {program_name}\nДата и время: {date_str}, в {time_str}"
+                markup = types.InlineKeyboardMarkup()
+                if ticket_code:
+                    ticket_path = os.path.join(TICKETS_FOLDER, f"{ticket_code}.png")
+                    if os.path.exists(ticket_path):
+                        btn = types.InlineKeyboardButton(
+                            "Показать билет", callback_data=f"show_ticket_{ticket_code}"
+                        )
+                        markup.add(btn)
+                messages.append((text, markup))
 
-    if not messages:
-        bot.answer_callback_query(
-            callback_query.id, "У вас нет зарегистрированных билетов."
-        )
-        return
+        if not messages:
+            bot.answer_callback_query(
+                callback_query.id, "У вас нет зарегистрированных билетов."
+            )
+            return
 
-    for text, markup in messages:
-        bot.send_message(telegram_id, text, reply_markup=markup)
+        for text, markup in messages:
+            bot.send_message(telegram_id, text, reply_markup=markup)
 
-    bot.answer_callback_query(callback_query.id)
+        bot.answer_callback_query(callback_query.id)
+    finally:
+        db.close()
 
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("show_ticket_"))
