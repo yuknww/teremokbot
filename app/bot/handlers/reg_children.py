@@ -47,6 +47,7 @@ def show_children_for_registration(chat_id: int, telegram_id: int):
                 "У вас ещё нет зарегистрированных детей. Добавьте ребёнка для продолжения:",
                 reply_markup=markup,
             )
+            logger.info(f"Show children for_registration for user {user.telegram_id}")
     except Exception as ex:
         logger.error(f"Возникла ошибка show_children_for_registration ошибка: {ex}")
     finally:
@@ -67,8 +68,9 @@ def choose_child(call: types.CallbackQuery):
             bot.send_message(
                 call.message.chat.id, "Этот ребёнок уже зарегистрирован на эту дату."
             )
+        logger.info(f"Show children for user {user.telegram_id}")
     except Exception as ex:
-        logger.error(f"Something error: {ex}")
+        logger.error(f"Something error choose child: {ex}")
     finally:
         db.close()
 
@@ -81,6 +83,7 @@ def add_child(call: types.CallbackQuery):
         update_user_state(db, call.from_user.id, "child_name")
 
         bot.send_message(call.message.chat.id, "Введите Имя и Фамилию ребёнка")
+        logger.info(f"Send question for user about name {call.from_user.id}")
     finally:
         db.close()
 
@@ -94,12 +97,13 @@ def child_name(message: types.Message):
         child = Child(user_id=user.id, child_name=name)
         db.add(child)
         db.commit()
-
+        logger.info(f"Child name {name} added to user {user.telegram_id}")
         update_user_state(db, message.from_user.id, "child_birth")
         bot.send_message(
             message.chat.id,
             "Укажите дату рождения ребёнка в формате гггг-мм-дд\nНапример: 2010-05-02",
         )
+        logger.info(f"Question about birth date {user.telegram_id}")
     except Exception as ex:
         logger.error(f"Something error: {ex}")
     finally:
@@ -139,7 +143,7 @@ def child_birth(message: types.Message):
         child = db.query(Child).filter(Child.user_id == user.id).first()
         child.birth_date = birth_date
         db.commit()
-
+        logger.info(f"Child birth date {user.telegram_id}")
         registration_program(user, child)
         update_user_state(db, message.from_user.id, "child_reg")
     except Exception as ex:

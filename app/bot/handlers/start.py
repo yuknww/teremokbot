@@ -3,6 +3,8 @@ from datetime import datetime
 
 from telebot import types
 from telebot.types import Message
+
+from app.bot.middlewares.logger import logger
 from app.db.crud import (
     get_user_by_telegram_id,
     create_user,
@@ -34,6 +36,9 @@ def start(message: Message):
 
     db = Session()
     try:
+        logger.info(
+            f"Command start: {message.from_user.first_name} / {message.from_user.id}"
+        )
         user = get_user_by_telegram_id(db=db, telegram_id=message.from_user.id)
         markup = gen_program_keyboard()
         if user:
@@ -45,6 +50,11 @@ def start(message: Message):
                 message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
             )
             create_user(db=db, telegram_id=message.from_user.id)
+            logger.info(
+                f"User created: {message.from_user.first_name} / {message.from_user.id}"
+            )
+    except Exception as e:
+        logger.error(f"Error processing START: {str(e)}")
     finally:
         db.close()
 
@@ -69,7 +79,7 @@ def gen_program_keyboard():
         markup.add(
             types.InlineKeyboardButton("🎟 Мои билеты", callback_data="my_tickets")
         )
-
+        logger.info(f"Created {len(programs)} programs")
         return markup
     finally:
         db.close()
@@ -101,6 +111,7 @@ def show_my_tickets(callback_query):
     db = Session()
     try:
         user = db.query(User).filter_by(telegram_id=telegram_id).first()
+        logger.info(f"User press my tickets: {user.telegram_id}")
         if not user:
             bot.answer_callback_query(callback_query.id, "Вы не зарегистрированы.")
             return
@@ -133,7 +144,7 @@ def show_my_tickets(callback_query):
 
         for text, markup in messages:
             bot.send_message(telegram_id, text, reply_markup=markup)
-
+        logger.info(f"User send info about reg child: {telegram_id}")
         bot.answer_callback_query(callback_query.id)
     finally:
         db.close()
@@ -149,3 +160,4 @@ def show_ticket(callback_query):
             bot.send_photo(callback_query.from_user.id, f)
     else:
         bot.answer_callback_query(callback_query.id, "Билет не найден.")
+    logger.info(f"Ticket received: {ticket_path}")

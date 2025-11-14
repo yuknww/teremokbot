@@ -21,7 +21,7 @@ def send_payment_info(user: User, child: Child):
         reg: Registration = (
             db.query(Registration).filter(Registration.child_id == child.id).first()
         )
-
+        logger.info(f"Start payment info for {user}")
         payment_url = init(
             order_id=int(reg.ticket_code),
             user_id=user.telegram_id,

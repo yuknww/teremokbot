@@ -30,6 +30,7 @@ def return_data_program(call: types.CallbackQuery):
         program_id = int(call.data.split("_")[1])
         user = get_user_by_telegram_id(db=db, telegram_id=call.from_user.id)
         user.data = {**(user.data or {}), "program_id": program_id}
+        logger.info(f"User choose program {program_id}")
         db.commit()
         # Запрашиваем даты для программы
         dates = db.query(DateSlot).filter(DateSlot.program_id == program_id).all()
@@ -46,7 +47,7 @@ def return_data_program(call: types.CallbackQuery):
                 reply_markup=menu,
             )
             return
-
+        logger.info(f"Available dates {available_dates}")
         # Создаем inline-кнопки для доступных дат
         markup = types.InlineKeyboardMarkup()
         for date in available_dates:
@@ -68,6 +69,7 @@ def return_data_program(call: types.CallbackQuery):
             text=f"Вы выбрали: {program_name}\n\nВыберите свободную дату для этой программы:",
             reply_markup=markup,
         )
+        logger.info(f"User sends aviable date for {program_name}")
     except Exception as e:
         logger.error(f"Возникла ошибка в возврате дат")
         db.rollback()
@@ -87,6 +89,7 @@ def choose_date(call: types.CallbackQuery):
         data = check_phone_and_name(db, call.from_user.id)
         if data["name"] != "OK":
             bot.send_message(call.message.chat.id, "Введите Ваше Имя и Фамилию")
+            logger.info(f"Send question about name")
             update_user_state(db=db, telegram_id=call.from_user.id, state="parent_name")
         else:
             show_children_for_registration(call.message.chat.id, call.from_user.id)
@@ -106,8 +109,9 @@ def parent_name(message: types.Message):
                 message.chat.id,
                 "Произошла ошибка, попробуйте ещё раз или свяжитесь с администратором @yuknww",
             )
-
+        logger.info(f"User name {name}")
         bot.send_message(message.chat.id, "Введите ваш номер телефона:")
+        logger.info(f"Send question about phone")
         update_user_state(db=db, telegram_id=message.from_user.id, state="parent_phone")
     except Exception as e:
         logger.error(f"Возникла ошибка parent name")
@@ -124,6 +128,7 @@ def parent_phone(message: types.Message):
             update_user_phone(db=db, telegram_id=message.from_user.id, phone=phone)
             is None
         ):
+            logger.info(f"User phone {phone}")
             bot.send_message(
                 message.chat.id,
                 "Произошла ошибка, попробуйте ещё раз или свяжитесь с администратором @yuknww",
@@ -132,6 +137,7 @@ def parent_phone(message: types.Message):
         bot.send_message(
             message.chat.id, "Укажите адрес электронной почти для отправки чека:"
         )
+        logger.info(f"Send question about email")
     except Exception as e:
         logger.error(f"Error parent phone")
     finally:
