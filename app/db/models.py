@@ -33,7 +33,9 @@ class User(Base):
     telegram_id = Column(BigInteger, unique=True, nullable=False)
     full_name = Column(String, nullable=True)
     phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
     state = Column(String, nullable=True)  # состояние FSM
+    data = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 
     children = relationship(
@@ -50,9 +52,9 @@ class Child(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    child_name = Column(String, nullable=False)
-    birth_date = Column(Date, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    child_name = Column(String, nullable=True)
+    birth_date = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=datetime.now)
 
     user = relationship("User", back_populates="children")
     registrations = relationship(
@@ -114,7 +116,7 @@ class Registration(Base):
     payment_status = Column(String, default="pending")
     payment_id = Column(String, nullable=True)
     ticket_code = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
 
     child = relationship("Child", back_populates="registrations")
     date_slot = relationship("DateSlot", back_populates="registrations")

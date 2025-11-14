@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 from sqlalchemy import func
 from telebot.types import Message
+from app.bot.middlewares.logger import logger
 
 from app.db.models import Program
 from app.db.models import User, Child, Program, DateSlot, Registration, Payment, Session
@@ -9,6 +10,18 @@ import uuid
 
 db_local = Session()
 # ---------- Пользователи ----------
+
+
+def check_phone_and_name(db: Session, telegram_id: int) -> dict:
+    """Проверяет указано имя и телефон пользователя в таблице"""
+    user = get_user_by_telegram_id(db, telegram_id)
+    answer = {}
+    if user.full_name is None:
+        answer["name"] = None
+    else:
+        answer["name"] = "OK"
+
+    return answer
 
 
 def get_user_by_telegram_id(db: Session, telegram_id: int) -> User | None:
@@ -249,3 +262,18 @@ def update_payment_status(db: Session, tbank_tx_id: str, new_status: str):
         db.commit()
         return payment
     return None
+
+
+def delete_registration_by_ticket(db: Session, ticket_code: str) -> bool:
+    """
+    Удаляет регистрацию по ticket_code.
+    Возвращает True, если удаление произошло, False если записи не было.
+    """
+    registration = (
+        db.query(Registration).filter(Registration.ticket_code == ticket_code).first()
+    )
+    if registration:
+        db.delete(registration)
+        db.commit()
+        return True
+    return False

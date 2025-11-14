@@ -6,8 +6,9 @@ if not find_dotenv():
 else:
     load_dotenv()
 
+COST = 1700
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-DATABASE_URL = "postgresql+psycopg2://admin:admin@db:5432/teremok_db"
+DATABASE_URL = os.getenv("DATABASE_URL")
 CHECK_REG_TOKEN = os.getenv("CHECK_REG_TOKEN")
 TERMINAL_KEY = os.getenv("TERMINAL_KEY")
 PASSWORD = os.getenv("PASSWORD")

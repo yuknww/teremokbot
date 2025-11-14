@@ -4,23 +4,34 @@ services:
   bot:
     build: .
     container_name: my_bot
-    restart: always
-    env_file:
-      - ./.env
+    command: python main.py
+    env_file: .env
     depends_on:
       - db
-    command: python main.py
     volumes:
-      - .:/app  # чтобы можно было править код локально
+      - .:/app
+      - ./tickets:/app/tickets
+    networks:
+      - my_network
+
+  api:
+    build: .
+    container_name: my_api
+    command: gunicorn -w 4 -b 0.0.0.0:8000 app:app
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
     networks:
       - my_network
 
   db:
     image: postgres:16
     container_name: my_postgres
-    restart: always
-    env_file:
-      - ./.env
+    env_file: .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
