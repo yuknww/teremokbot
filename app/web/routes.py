@@ -80,6 +80,7 @@ def handle_callback():
                     user_id,
                     "⚠️ Оплата отменена. Пожалуйста, начните регистрацию заново",
                 )
+                delete_registration_by_ticket(db=db, ticket_code=order_id)
             except Exception as e:
                 logger.error(f"Error processing CANCELED: {str(e)}")
             return "OK", 200
