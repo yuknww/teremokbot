@@ -111,7 +111,7 @@ def show_my_tickets(callback_query):
     db = Session()
     try:
         user = db.query(User).filter_by(telegram_id=telegram_id).first()
-        logger.info(f"User press my tickets: {user.telegram_id}")
+        logger.info(f"User press my tickets: {telegram_id}")
         if not user:
             bot.answer_callback_query(callback_query.id, "Вы не зарегистрированы.")
             return
@@ -119,6 +119,10 @@ def show_my_tickets(callback_query):
         messages = []
         for child in user.children:
             for reg in child.registrations:
+                # показываем только завершённые платежи
+                if reg.payment_status != "completed":
+                    continue
+
                 program_name = reg.program.name
                 date_str = format_date(reg.date_slot.date)
                 time_str = reg.date_slot.time.strftime("%H:%M")
@@ -144,7 +148,7 @@ def show_my_tickets(callback_query):
 
         for text, markup in messages:
             bot.send_message(telegram_id, text, reply_markup=markup)
-        logger.info(f"User send info about reg child: {telegram_id}")
+        logger.info(f"User send info about registered child: {telegram_id}")
         bot.answer_callback_query(callback_query.id)
     finally:
         db.close()
