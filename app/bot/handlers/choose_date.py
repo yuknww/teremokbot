@@ -31,7 +31,6 @@ def return_data_program(call: types.CallbackQuery):
         user = get_user_by_telegram_id(db=db, telegram_id=call.from_user.id)
         user.data = {**(user.data or {}), "program_id": program_id}
         db.commit()
-        logger.error(f"Ошибка при добавлении program_id")
         bot.send_message(call.message.chat.id, "Возникла ошибка, попробуйте ещё раз")
         # Запрашиваем даты для программы
         dates = db.query(DateSlot).filter(DateSlot.program_id == program_id).all()
