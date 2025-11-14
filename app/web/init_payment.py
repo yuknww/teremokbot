@@ -69,8 +69,8 @@ def init(order_id: int, phone, user_id, email) -> str:
 
     if response.status_code == 200:
         response_data = response.json()
-        # payment_url = get_qr(response_data["PaymentId"])
-        payment_url = response_data["PaymentURL"]
+        payment_url = get_qr(response_data["PaymentId"])
+        # payment_url = response_data["PaymentURL"]
 
         logger.info(f"USER_ID: {user_id} Сформирована ссылка на оплату {response_data}")
         logger.info(f"user_id: {user_id} Отправлена ссылка на оплату")

@@ -6,7 +6,7 @@ if not find_dotenv():
 else:
     load_dotenv()
 
-COST = 1700
+COST = 10
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 CHECK_REG_TOKEN = os.getenv("CHECK_REG_TOKEN")
