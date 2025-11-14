@@ -1,15 +1,16 @@
+import os
+from datetime import datetime
+
 from telebot import types
 from telebot.types import Message
 from app.db.crud import (
     get_user_by_telegram_id,
-    update_user_state,
     create_user,
-    check_user_state,
-    update_user_name,
-    update_user_phone,
 )
 from app.loader import bot
-from app.db.models import Session
+from app.db.models import Session, Program, User
+
+TICKETS_FOLDER = "tickets"  # папка с билетами в корне
 
 
 @bot.message_handler(commands=["start"])
@@ -33,51 +34,107 @@ def start(message: Message):
 
     db = Session()
     user = get_user_by_telegram_id(db=db, telegram_id=message.from_user.id)
-
+    markup = gen_program_keyboard()
     if user:
-        markup = types.InlineKeyboardMarkup()
-        markup.add(
-            types.InlineKeyboardButton(
-                "➕ Зарегистрировать ребёнка", callback_data="register_child"
-            ),
-            types.InlineKeyboardButton("🎟 Мои билеты", callback_data="my_tickets"),
-        )
         bot.send_message(
             message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
         )
     else:
         bot.send_message(
-            message.chat.id,
-            "Добрый день, это бот от Шоколадной Фабрики Деда Мороза\n"
-            "Перед началом, введите пожалуйста ваше имя:",
+            message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
         )
         create_user(db=db, telegram_id=message.from_user.id)
-        update_user_state(db=db, telegram_id=message.from_user.id, state="parent_name")
 
 
-@bot.message_handler(func=lambda message: check_user_state(message, "parent_name"))
-def parent_name(message: Message):
+def gen_program_keyboard():
     db = Session()
-    name = message.text
-    if update_user_name(db=db, telegram_id=message.from_user.id, name=name) is None:
-        bot.send_message(
-            message.chat.id,
-            "Произошла ошибка, попробуйте ещё раз или свяжитесь с администратором @yuknww",
+    # Получаем список программ из таблицы programs
+    programs = db.query(Program).all()
+
+    markup = types.InlineKeyboardMarkup()
+
+    # Создаем кнопку для каждой программы
+    for program in programs:
+        markup.add(
+            types.InlineKeyboardButton(
+                program.name, callback_data=f"program_{program.id}"
+            )
         )
 
-    bot.send_message(message.chat.id, "Введите ваш номер телефона:")
-    update_user_state(db=db, telegram_id=message.from_user.id, state="parent_phone")
+    # Добавляем кнопку "Мои билеты"
+    markup.add(types.InlineKeyboardButton("🎟 Мои билеты", callback_data="my_tickets"))
+
+    return markup
 
 
-@bot.message_handler(func=lambda message: check_user_state(message, "parent_phone"))
-def parent_phone(message: Message):
+MONTH_NAMES = {
+    1: "января",
+    2: "февраля",
+    3: "марта",
+    4: "апреля",
+    5: "мая",
+    6: "июня",
+    7: "июля",
+    8: "августа",
+    9: "сентября",
+    10: "октября",
+    11: "ноября",
+    12: "декабря",
+}
+
+
+def format_date(dt: datetime):
+    return f"{dt.day:02d} {MONTH_NAMES[dt.month]}"
+
+
+@bot.callback_query_handler(func=lambda c: c.data == "my_tickets")
+def show_my_tickets(callback_query):
+    telegram_id = callback_query.from_user.id
     db = Session()
-    phone = message.text
-    if update_user_phone(db=db, telegram_id=message.from_user.id, phone=phone) is None:
-        bot.send_message(
-            message.chat.id,
-            "Произошла ошибка, попробуйте ещё раз или свяжитесь с администратором @yuknww",
+    user = db.query(User).filter_by(telegram_id=telegram_id).first()
+    if not user:
+        bot.answer_callback_query(callback_query.id, "Вы не зарегистрированы.")
+        return
+
+    messages = []
+    for child in user.children:
+        for reg in child.registrations:
+            program_name = reg.program.name
+            date_str = format_date(reg.date_slot.date)
+            time_str = reg.date_slot.time.strftime("%H:%M")
+            child_name = child.child_name
+            ticket_code = reg.ticket_code
+
+            text = f"Ребёнок: {child_name}\nПрограмма: {program_name}\nДата и время: {date_str}, в {time_str}"
+            markup = types.InlineKeyboardMarkup()
+            if ticket_code:
+                ticket_path = os.path.join(TICKETS_FOLDER, f"{ticket_code}.png")
+                if os.path.exists(ticket_path):
+                    btn = types.InlineKeyboardButton(
+                        "Показать билет", callback_data=f"show_ticket_{ticket_code}"
+                    )
+                    markup.add(btn)
+            messages.append((text, markup))
+
+    if not messages:
+        bot.answer_callback_query(
+            callback_query.id, "У вас нет зарегистрированных билетов."
         )
-    bot.send_message(message.chat.id, "Спасибо, ниже вы можете выбрать утренник и дату")
-    start(message)
-    update_user_state(db=db, telegram_id=message.from_user.id, state="start")
+        return
+
+    for text, markup in messages:
+        bot.send_message(telegram_id, text, reply_markup=markup)
+
+    bot.answer_callback_query(callback_query.id)
+
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith("show_ticket_"))
+def show_ticket(callback_query):
+    ticket_code = callback_query.data.split("show_ticket_")[1]
+    ticket_path = os.path.join(TICKETS_FOLDER, f"{ticket_code}.png")
+    if os.path.exists(ticket_path):
+        # Если Docker, возможно медленно из-за копирования файлов между контейнером и хостом
+        with open(ticket_path, "rb") as f:
+            bot.send_photo(callback_query.from_user.id, f)
+    else:
+        bot.answer_callback_query(callback_query.id, "Билет не найден.")
