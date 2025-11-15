@@ -50,7 +50,7 @@ def init(order_id: int, phone, user_id, email) -> str:
             "Taxation": "usn_income",
             "Items": [
                 {
-                    "Name": "Оплата регистрации на МКС",
+                    "Name": "Оплата билета на новогоднее мероприятие",
                     "Price": amount,
                     "Quantity": 1,
                     "Amount": amount,
