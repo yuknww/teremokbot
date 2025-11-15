@@ -4,13 +4,15 @@ from datetime import datetime
 from telebot import types
 from telebot.types import Message
 
+from app.bot.keyboards.menu_keyboard import menu
+from app.bot.keyboards.program_keyboard import gen_program_keyboard
 from app.bot.middlewares.logger import logger
 from app.db.crud import (
     get_user_by_telegram_id,
     create_user,
 )
 from app.loader import bot
-from app.db.models import Session, Program, User
+from app.db.models import Session, User, Program
 
 TICKETS_FOLDER = "tickets"  # папка с билетами в корне
 
@@ -19,7 +21,7 @@ TICKETS_FOLDER = "tickets"  # папка с билетами в корне
 def start(message: Message):
     text = (
         "Привет, это бот для покупки билета на Новогодние представления в Шоколадной Фабрике Дедушки Мороза.\n\n"
-        "Выбери программу 👇"
+        "Выбери действия 👇"
     )
     db = Session()
     try:
@@ -27,7 +29,7 @@ def start(message: Message):
             f"Command start: {message.from_user.first_name} / {message.from_user.id}"
         )
         user = get_user_by_telegram_id(db=db, telegram_id=message.from_user.id)
-        markup = gen_program_keyboard()
+        markup = menu()
         if user:
             bot.send_message(
                 message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
@@ -46,30 +48,19 @@ def start(message: Message):
         db.close()
 
 
-def gen_program_keyboard():
-    db = Session()
-    try:
-        # Получаем список программ из таблицы programs
-        programs = db.query(Program).all()
-
-        markup = types.InlineKeyboardMarkup()
-
-        # Создаем кнопку для каждой программы
-        for program in programs:
-            markup.add(
-                types.InlineKeyboardButton(
-                    program.name, callback_data=f"program_{program.id}"
-                )
-            )
-
-        # Добавляем кнопку "Мои билеты"
-        markup.add(
-            types.InlineKeyboardButton("🎟 Мои билеты", callback_data="my_tickets")
-        )
-        logger.info(f"Created {len(programs)} programs")
-        return markup
-    finally:
-        db.close()
+@bot.callback_query_handler(func=lambda call: call.data == "main_menu")
+def main_menu(call: types.CallbackQuery):
+    text = (
+        "Привет, это бот для покупки билета на Новогодние представления в Шоколадной Фабрике Дедушки Мороза.\n\n"
+        "Выбери действия 👇"
+    )
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.id,
+        text=text,
+        parse_mode="Markdown",
+        reply_markup=menu(),
+    )
 
 
 MONTH_NAMES = {
@@ -152,3 +143,80 @@ def show_ticket(callback_query):
     else:
         bot.answer_callback_query(callback_query.id, "Билет не найден.")
     logger.info(f"Ticket received: {ticket_path}")
+
+
+@bot.callback_query_handler(func=lambda c: c.data == "buy_ticket")
+def buy_ticket(callback: types.CallbackQuery):
+    text = "Выбери программу 👇"
+    markup = gen_program_keyboard()
+
+    bot.edit_message_text(
+        chat_id=callback.message.chat.id,
+        message_id=callback.message.id,
+        text=text,
+        reply_markup=markup,
+    )
+    bot.answer_callback_query(callback.id)
+
+
+@bot.callback_query_handler(func=lambda c: c.data == "about_program")
+def about_program(callback: types.CallbackQuery):
+    db = Session()
+    try:
+        # Получаем список программ из таблицы programs
+        programs = db.query(Program).all()
+
+        markup = types.InlineKeyboardMarkup()
+
+        # Создаем кнопку для каждой программы
+        for program in programs:
+            markup.add(
+                types.InlineKeyboardButton(
+                    program.name, callback_data=f"show_about_{program.id}"
+                )
+            )
+        markup.add(types.InlineKeyboardButton("Назад", callback_data="main_menu"))
+        bot.edit_message_text(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.id,
+            text="Выбери программу:",
+            reply_markup=markup,
+        )
+    finally:
+        db.close()
+
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith("show_about_"))
+def show_about(callback: types.CallbackQuery):
+    program_id = int(callback.data.split("_")[2])  # достаём ID программы
+    db = Session()
+
+    try:
+        program = db.query(Program).filter_by(id=program_id).first()
+
+        if not program:
+            bot.answer_callback_query(
+                callback.id, "Программа не найдена.", show_alert=True
+            )
+            return
+
+        # Описание программы
+        description = program.description or "Описание пока недоступно."
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("Назад", callback_data="about_program"))
+        bot.edit_message_text(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.id,
+            text=f"📘 *О программе:*\n\n{description}",
+            parse_mode="Markdown",
+            reply_markup=markup,
+        )
+
+        bot.answer_callback_query(callback.id)
+
+    except Exception as e:
+        logger.error(f"Ошибка в show_about: {e}")
+        bot.answer_callback_query(callback.id, "Произошла ошибка.", show_alert=True)
+
+    finally:
+        db.close()

@@ -1,7 +1,5 @@
-from psycopg2.errors import UniqueViolation
-
 from app.bot.handlers.reg_children import show_children_for_registration
-from app.bot.handlers.start import gen_program_keyboard
+from app.bot.keyboards.program_keyboard import gen_program_keyboard
 from app.bot.middlewares.logger import logger
 from app.db.crud import (
     check_phone_and_name,
@@ -69,9 +67,9 @@ def return_data_program(call: types.CallbackQuery):
             text=f"Вы выбрали: {program_name}\n\nВыберите свободную дату для этой программы:",
             reply_markup=markup,
         )
-        logger.info(f"User sends aviable date for {program_name}")
+        logger.info(f"User sends available date for {program_name}")
     except Exception as e:
-        logger.error(f"Возникла ошибка в возврате дат")
+        logger.error(f"Возникла ошибка в возврате дат {e.args}")
         db.rollback()
     finally:
         db.close()
@@ -96,7 +94,7 @@ def choose_date(call: types.CallbackQuery):
         else:
             show_children_for_registration(call.message.chat.id, call.from_user.id)
     except Exception as e:
-        logger.error(f"Возникла ошибка choose date")
+        logger.error(f"Возникла ошибка choose date {e.args}")
     finally:
         db.close()
 
@@ -116,7 +114,7 @@ def parent_name(message: types.Message):
         logger.info(f"Send question about phone")
         update_user_state(db=db, telegram_id=message.from_user.id, state="parent_phone")
     except Exception as e:
-        logger.error(f"Возникла ошибка parent name")
+        logger.error(f"Возникла ошибка parent name {e.args}")
     finally:
         db.close()
 
@@ -141,7 +139,7 @@ def parent_phone(message: types.Message):
         )
         logger.info(f"Send question about email")
     except Exception as e:
-        logger.error(f"Error parent phone")
+        logger.error(f"Error parent phone {e.args}")
     finally:
         db.close()
 
@@ -156,7 +154,7 @@ def handle_email(message: types.Message):
             try:
                 valid = validate_email(user_email)
                 email = valid.normalized
-            except EmailNotValidError as e:
+            except EmailNotValidError:
                 bot.send_message(
                     message.chat.id,
                     f"❌ Неверный email:\nПожалуйста, попробуйте ещё раз.",
@@ -179,11 +177,8 @@ def handle_email(message: types.Message):
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "menu")
-def menu_callback(call: types.CallbackQuery):
-    text = (
-        "Привет, это бот для покупки билета на Новогодние представления в Шоколадной Фабрике Дедушки Мороза.\n\n"
-        "Выбери программу 👇"
-    )
+def choose_program(call: types.CallbackQuery):
+    text = "Выбери программу 👇"
     markup = gen_program_keyboard()
 
     bot.edit_message_text(
