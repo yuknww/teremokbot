@@ -42,7 +42,7 @@ def get_event_message(date_id: int, session: Session):
         t = date_slot.time  # datetime.time
         time_str = t.strftime("%H:%M")  # форматируем как 'HH:MM'
 
-        message = f"Ждём вас в Теремке Новогодних Чудес {day:02d} {month}, в {time_str}"
+        message = f"Ждём вас на Шоколадной Фабрике дедушки мороза {day:02d} {month}, в {time_str}"
         return message
     except Exception as e:
         logger.error(f"Возникла ошибка в опреедлнии даты и времени {e}")
