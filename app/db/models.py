@@ -147,7 +147,7 @@ class Payment(Base):
     amount = Column(Integer, nullable=False)
     status = Column(String, default="pending")
     raw_response = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
 
     registration = relationship("Registration", back_populates="payment")
 
