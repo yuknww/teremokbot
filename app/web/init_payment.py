@@ -83,7 +83,7 @@ def init(order_id: int, phone, user_id, email) -> str:
             logger.error(f"Не удалось получить QR для PaymentId={payment_id}")
             return "Error"
 
-        logger.info(f"USER_ID: {user_id} Сформирована ссылка на оплату {payment_url}")
+        logger.info(f"USER_ID: {user_id} Сформирована ссылка на оплату {response_data}")
         return payment_url
 
     except requests.RequestException as e:
