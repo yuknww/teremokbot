@@ -92,7 +92,9 @@ def choose_date(call: types.CallbackQuery):
             logger.info(f"Send question about name")
             update_user_state(db=db, telegram_id=call.from_user.id, state="parent_name")
         else:
-            show_children_for_registration(call.message.chat.id, call.from_user.id)
+            show_children_for_registration(
+                call.message.chat.id, call.from_user.id, call
+            )
     except Exception as e:
         logger.error(f"Возникла ошибка choose date {e.args}")
     finally:

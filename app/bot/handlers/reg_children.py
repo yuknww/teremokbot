@@ -7,13 +7,15 @@ from datetime import datetime
 from telebot import types
 
 
-def show_children_for_registration(chat_id: int, telegram_id: int):
+def show_children_for_registration(
+    chat_id: int, telegram_id: int, call: types.CallbackQuery = None
+):
     db = Session()
 
     try:
         # Получаем пользователя по telegram_id
         user = db.query(User).filter(User.telegram_id == telegram_id).first()
-
+        date_id = user.data
         markup = types.InlineKeyboardMarkup()
 
         if user and user.children:
@@ -30,9 +32,15 @@ def show_children_for_registration(chat_id: int, telegram_id: int):
                     "➕ Добавить ребёнка", callback_data="add_child"
                 )
             )
-            bot.send_message(
-                chat_id,
-                "Выберите ребёнка для регистрации или добавьте нового:",
+            markup.add(
+                types.InlineKeyboardButton(
+                    "Назад", callback_data=f"program_{date_id["program_id"]}"
+                )
+            )
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.id,
+                text="Выберите ребёнка для регистрации или добавьте нового:",
                 reply_markup=markup,
             )
         else:
