@@ -153,26 +153,3 @@ class Payment(Base):
 
     def __repr__(self):
         return f"<Payment(id={self.id}, status={self.status}, amount={self.amount})>"
-
-
-def wait_for_postgres():
-    host = "localhost"
-    port = 5432
-    print(f"Waiting for Postgres at {host}:{port}...")
-    while True:
-        try:
-            conn = psycopg2.connect(
-                host=host, port=port, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME
-            )
-            conn.close()
-            print("Postgres is ready!")
-            break
-        except psycopg2.OperationalError:
-            print("Postgres not ready, sleeping 1 second...")
-            time.sleep(1)
-
-
-# ---------- 2. Создаём таблицы ----------
-def create_tables():
-    Base.metadata.create_all(bind=engine)
-    print("Tables created (if they did not exist).")
