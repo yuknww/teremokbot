@@ -142,18 +142,26 @@ def child_birth(message: types.Message):
             )
             return
 
-        # Если формат верный — сохраняем в базу
         user = db.query(User).filter(User.telegram_id == message.from_user.id).first()
         if not user:
             bot.send_message(message.chat.id, "Пользователь не найден.")
             return
 
-        child = db.query(Child).filter(Child.user_id == user.id).first()
+        # Берём последнего ребёнка
+        child = (
+            db.query(Child)
+            .filter(Child.user_id == user.id)
+            .order_by(Child.id.desc())
+            .first()
+        )
+
         child.birth_date = birth_date
         db.commit()
         logger.info(f"Child birth date {user.telegram_id}")
+
         registration_program(user, child)
         update_user_state(db, message.from_user.id, "child_reg")
+
     except Exception as ex:
         logger.error(f"Something error: {ex}")
     finally:
