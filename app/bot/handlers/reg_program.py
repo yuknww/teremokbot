@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.bot.handlers.payment_info import send_payment_info
 from app.bot.middlewares.logger import logger
+from app.db.crud import update_user_state
 from app.loader import bot
 from app.db.models import Session, User, Registration, Child
 from telebot import types
@@ -12,6 +13,19 @@ from psycopg2.errors import UniqueViolation
 
 def registration_program(user: User, child: Child):
     db = Session()
+
+    if not user.phone:
+        bot.send_message(user.telegram_id, "Пожалуйста, укажите номер телефона:")
+        update_user_state(db=db, telegram_id=user.telegram_id, state="parent_phone")
+        db.close()
+        return
+
+    if not user.email:
+        bot.send_message(user.telegram_id, "Пожалуйста, укажите ваш Email:")
+        update_user_state(db=db, telegram_id=user.telegram_id, state="parent_email")
+        db.close()
+        return
+
     date_id = user.data["date_id"]
     program_id = user.data["program_id"]
 
