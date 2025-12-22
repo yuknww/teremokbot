@@ -42,6 +42,12 @@ def registration_program(user: User, child: Child):
         )
 
         if existing_reg:
+            if existing_reg.payment_status != "completed":
+                uuid = random.randint(10000000, 99999999)
+                existing_reg.ticket_code = uuid
+                db.commit()
+                send_payment_info(user, child, uuid)
+                return
             logger.info(
                 f"Ребёнок уже зарегистрирован child_id={child.id}, date_id={date_id}"
             )

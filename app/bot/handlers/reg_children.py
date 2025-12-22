@@ -58,6 +58,7 @@ def show_children_for_registration(
             logger.info(f"Show children for_registration for user {user.telegram_id}")
     except Exception as ex:
         logger.error(f"Возникла ошибка show_children_for_registration ошибка: {ex}")
+        db.rollback()
     finally:
         db.close()
 
@@ -79,6 +80,7 @@ def choose_child(call: types.CallbackQuery):
         logger.info(f"Show children for user {user.telegram_id}")
     except Exception as ex:
         logger.error(f"Something error choose child: {ex}")
+        db.rollback()
     finally:
         db.close()
 
@@ -114,6 +116,7 @@ def child_name(message: types.Message):
         logger.info(f"Question about birth date {user.telegram_id}")
     except Exception as ex:
         logger.error(f"Something error: {ex}")
+        db.rollback()
     finally:
         db.close()
 
@@ -164,5 +167,6 @@ def child_birth(message: types.Message):
 
     except Exception as ex:
         logger.error(f"Something error: {ex}")
+        db.rollback()
     finally:
         db.close()

@@ -97,6 +97,7 @@ def choose_date(call: types.CallbackQuery):
             )
     except Exception as e:
         logger.error(f"Возникла ошибка choose date {e.args}")
+        db.rollback()
     finally:
         db.close()
 
@@ -117,6 +118,7 @@ def parent_name(message: types.Message):
         update_user_state(db=db, telegram_id=message.from_user.id, state="parent_phone")
     except Exception as e:
         logger.error(f"Возникла ошибка parent name {e.args}")
+        db.rollback()
     finally:
         db.close()
 
@@ -142,6 +144,7 @@ def parent_phone(message: types.Message):
         logger.info(f"Send question about email")
     except Exception as e:
         logger.error(f"Error parent phone {e.args}")
+        db.rollback()
     finally:
         db.close()
 
@@ -174,6 +177,7 @@ def handle_email(message: types.Message):
             logger.error(
                 f"Возникла ошибка при email. Ошибка {e}, Данные:\n user_id: {user_id}/{message.from_user.username}\n data: {message.text}"
             )
+            db.rollback()
     finally:
         db.close()
 

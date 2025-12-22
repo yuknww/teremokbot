@@ -54,5 +54,6 @@ def send_payment_info(user: User, child: Child, uuid):
         bot.send_message(
             user.telegram_id, "Возникла ошибка, свяжитесь с администратором @yuknww"
         )
+        db.rollback()
     finally:
         db.close()

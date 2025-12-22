@@ -39,6 +39,18 @@ services:
     networks:
       - my_network
 
+  ticket:
+    build: .
+    container_name: check
+    command: python check_reg.py
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    networks:
+      - my_network
+
 volumes:
   postgres_data:
 

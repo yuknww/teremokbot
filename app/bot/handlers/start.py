@@ -10,6 +10,7 @@ from app.bot.middlewares.logger import logger
 from app.db.crud import (
     get_user_by_telegram_id,
     create_user,
+    update_user_state,
 )
 from app.loader import bot
 from app.db.models import Session, User, Program
@@ -34,6 +35,7 @@ def start(message: Message):
             bot.send_message(
                 message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
             )
+            update_user_state(db=db, state="start", telegram_id=message.from_user.id)
         else:
             bot.send_message(
                 message.chat.id, text, reply_markup=markup, parse_mode="Markdown"
@@ -44,6 +46,7 @@ def start(message: Message):
             )
     except Exception as e:
         logger.error(f"Error processing START: {str(e)}")
+        db.rollback()
     finally:
         db.close()
 
@@ -217,6 +220,7 @@ def show_about(callback: types.CallbackQuery):
     except Exception as e:
         logger.error(f"Ошибка в show_about: {e}")
         bot.answer_callback_query(callback.id, "Произошла ошибка.", show_alert=True)
+        db.rollback()
 
     finally:
         db.close()
