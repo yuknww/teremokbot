@@ -79,13 +79,16 @@ def get_user_state(db: Session, telegram_id: int) -> str | None:
     return user.state if user else None
 
 
-def check_user_state(message: Message, state: str) -> bool:
-    """Получить текущее состояние пользователя"""
-    user = get_user_by_telegram_id(db=db_local, telegram_id=message.from_user.id)
-    if user.state == state:
-        return True
-    else:
+def check_user_state(message, state):
+    db = Session()
+    try:
+        user = get_user_by_telegram_id(db, message.from_user.id)
+        return user and user.state == state
+    except Exception:
+        db.rollback()
         return False
+    finally:
+        db.close()
 
 
 # ---------- Дети ----------
