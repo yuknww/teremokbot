@@ -82,7 +82,7 @@ def choose_date(call: types.CallbackQuery):
     try:
         date_id = int(call.data.split("_")[1])
         date = db.query(DateSlot).get(date_id)
-        if date.booked_count <= date.capacity:
+        if date.booked_count >= date.capacity:
             bot.send_message(
                 call.message.chat.id, f"Места на выбранную дату закончились"
             )
