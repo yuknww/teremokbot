@@ -81,6 +81,12 @@ def choose_date(call: types.CallbackQuery):
     bot.answer_callback_query(callback_query_id=call.id)
     try:
         date_id = int(call.data.split("_")[1])
+        date = db.query(DateSlot).get(date_id)
+        if date.booked_count <= date.capacity:
+            bot.send_message(
+                call.message.chat.id, f"Места на выбранную дату закончились"
+            )
+            return
         user = get_user_by_telegram_id(db, call.from_user.id)
         user.data = {**(user.data or {}), "date_id": date_id}
         db.commit()
