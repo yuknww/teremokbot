@@ -95,8 +95,29 @@ def handle_enter(call):
         session.close()
         return
 
+    # --- подтверждаем вход ---
     reg.payment_status = "entered"
     session.commit()
+
+    # --- всего ожидается (confirmed + entered) ---
+    total_expected = (
+        session.query(Registration)
+        .filter(
+            Registration.date_id == reg.date_id,
+            Registration.payment_status.in_(["confirmed", "entered"]),
+        )
+        .count()
+    )
+
+    # --- уже пришли ---
+    entered_count = (
+        session.query(Registration)
+        .filter(
+            Registration.date_id == reg.date_id,
+            Registration.payment_status == "entered",
+        )
+        .count()
+    )
 
     bot.answer_callback_query(call.id, "✅ Вход подтверждён")
     bot.edit_message_reply_markup(
@@ -107,10 +128,14 @@ def handle_enter(call):
 
     bot.send_message(
         call.message.chat.id,
-        f"🎉 {reg.child.child_name} успешно отмечен",
+        (
+            f"🎉 {reg.child.child_name} успешно отмечен\n\n"
+            f"👥 Пришло: {entered_count} из {total_expected}"
+        ),
     )
 
     session.close()
+
 
 
 if __name__ == "__main__":
