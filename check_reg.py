@@ -137,6 +137,5 @@ def handle_enter(call):
     session.close()
 
 
-
 if __name__ == "__main__":
     bot.infinity_polling()
