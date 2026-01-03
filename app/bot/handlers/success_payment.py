@@ -80,9 +80,21 @@ def process_successful_payment(data):
 
         # Генерируем билет
         path_ticket = qrcodegen(uuid)
-        with open(path_ticket, "rb") as photo:
-            bot.send_photo(user_id, photo)
-            logger.info(f"user_id: {user_id} отправлен билет {uuid}")
+        try:
+            with open(path_ticket, "rb") as photo:
+                bot.send_photo(user_id, photo)
+                logger.info(f"user_id: {user_id} отправлен билет {uuid}")
+        except Exception as e:
+            for admin in ADMIN_ID:
+                bot.send_message(
+                    admin, f"Ошибка отправки билета для пользователя {user_id}"
+                )
+            logger.error(f"Возникла ошибка при отправке билета {e} {e.args}")
+            bot.send_message(
+                user_id,
+                "Возникла проблема с загрузкой билета, обратитесь пожалуйста к администратору @yuknww\n\n"
+                "Или введите /start и нажмите кнопку Мои билеты",
+            )
 
         # Сообщение пользователю
         text = (
