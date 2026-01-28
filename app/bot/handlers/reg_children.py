@@ -20,7 +20,9 @@ def show_children_for_registration(
 
         if user and user.children:
             # Создаем кнопки для каждого ребенка
-            logger.info(f"user_id={telegram_id} Show children for_registration (has children)")
+            logger.info(
+                f"user_id={telegram_id} Show children for_registration (has children)"
+            )
             for child in user.children:
                 markup.add(
                     types.InlineKeyboardButton(
@@ -38,12 +40,16 @@ def show_children_for_registration(
                     "Назад", callback_data=f"program_{date_id["program_id"]}"
                 )
             )
-            bot.edit_message_text(
-                chat_id=call.message.chat.id,
-                message_id=call.message.id,
-                text="Выберите ребёнка для регистрации или добавьте нового:",
-                reply_markup=markup,
-            )
+            text = "Выберите ребёнка для регистрации или добавьте нового:"
+            if call:
+                bot.edit_message_text(
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.id,
+                    text=text,
+                    reply_markup=markup,
+                )
+            else:
+                bot.send_message(chat_id=chat_id, text=text, reply_markup=markup)
         else:
             # Если детей нет, сразу предлагаем добавить
             markup.add(
@@ -58,7 +64,9 @@ def show_children_for_registration(
             )
             logger.info(f"user_id={telegram_id} Show children for_registration")
     except Exception as ex:
-        logger.error(f"user_id={telegram_id} Возникла ошибка show_children_for_registration: {ex}")
+        logger.error(
+            f"user_id={telegram_id} Возникла ошибка show_children_for_registration: {ex}"
+        )
         db.rollback()
     finally:
         db.close()
@@ -78,7 +86,9 @@ def choose_child(call: types.CallbackQuery):
             bot.send_message(
                 call.message.chat.id, "Этот ребёнок уже зарегистрирован на эту дату."
             )
-        logger.info(f"user_id={call.from_user.id} Show children for user (choose_child)")
+        logger.info(
+            f"user_id={call.from_user.id} Show children for user (choose_child)"
+        )
     except Exception as ex:
         logger.error(f"user_id={call.from_user.id} Something error choose child: {ex}")
         db.rollback()
@@ -167,7 +177,9 @@ def child_birth(message: types.Message):
         update_user_state(db, message.from_user.id, "child_reg")
 
     except Exception as ex:
-        logger.error(f"user_id={message.from_user.id} Something error child_birth: {ex}")
+        logger.error(
+            f"user_id={message.from_user.id} Something error child_birth: {ex}"
+        )
         db.rollback()
     finally:
         db.close()

@@ -72,7 +72,11 @@ def return_data_program(call: types.CallbackQuery):
         )
         logger.info(f"user_id={uid} User sends available date for {program_name}")
     except Exception as e:
-        uid = getattr(call, "from_user", None) and getattr(call.from_user, "id", None) or "?"
+        uid = (
+            getattr(call, "from_user", None)
+            and getattr(call.from_user, "id", None)
+            or "?"
+        )
         logger.error(f"user_id={uid} Возникла ошибка в возврате дат {e} {e.args}")
         db.rollback()
     finally:
@@ -128,7 +132,9 @@ def parent_name(message: types.Message):
         logger.info(f"user_id={message.from_user.id} Send question about phone")
         update_user_state(db=db, telegram_id=message.from_user.id, state="parent_phone")
     except Exception as e:
-        logger.error(f"user_id={message.from_user.id} Возникла ошибка parent name {e.args}")
+        logger.error(
+            f"user_id={message.from_user.id} Возникла ошибка parent name {e.args}"
+        )
         db.rollback()
     finally:
         db.close()
@@ -180,10 +186,10 @@ def handle_email(message: types.Message):
             user = get_user_by_telegram_id(db, telegram_id=user_id)
             user.email = email
             db.commit()
-            logger.info(
-                f"user_id={user_id} указал email {email}"
+            logger.info(f"user_id={user_id} указал email {email}")
+            show_children_for_registration(
+                chat_id=message.chat.id, telegram_id=message.from_user.id
             )
-            show_children_for_registration(message.chat.id, message.from_user.id)
         except Exception as e:
             logger.error(
                 f"user_id={user_id} Возникла ошибка при email: {e}, data={message.text}"
