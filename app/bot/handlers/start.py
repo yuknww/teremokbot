@@ -24,7 +24,7 @@ def start(message: Message):
     db = Session()
     try:
         logger.info(
-            f"Command start: {message.from_user.first_name} / {message.from_user.id}"
+            f"user_id={message.from_user.id} Command start: {message.from_user.first_name}"
         )
         user = get_user_by_telegram_id(db=db, telegram_id=message.from_user.id)
         markup = menu()
@@ -39,10 +39,10 @@ def start(message: Message):
             )
             create_user(db=db, telegram_id=message.from_user.id)
             logger.info(
-                f"User created: {message.from_user.first_name} / {message.from_user.id}"
+                f"user_id={message.from_user.id} User created: {message.from_user.first_name}"
             )
     except Exception as e:
-        logger.error(f"Error processing START: {str(e)}")
+        logger.error(f"user_id={message.from_user.id} Error processing START: {str(e)}")
         db.rollback()
     finally:
         db.close()
@@ -50,6 +50,7 @@ def start(message: Message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "main_menu")
 def main_menu(call: types.CallbackQuery):
+    logger.info(f"user_id={call.from_user.id} main_menu")
     text = (
         "Привет, это бот для покупки билета на Новогодние представления в Шоколадной Фабрике Дедушки Мороза.\n\n"
         "Выбери действия 👇"
@@ -89,7 +90,7 @@ def show_my_tickets(callback_query):
     db = Session()
     try:
         user = db.query(User).filter_by(telegram_id=telegram_id).first()
-        logger.info(f"User press my tickets: {telegram_id}")
+        logger.info(f"user_id={telegram_id} User press my tickets")
         if not user:
             bot.answer_callback_query(callback_query.id, "Вы не зарегистрированы.")
             return
@@ -126,7 +127,7 @@ def show_my_tickets(callback_query):
 
         for text, markup in messages:
             bot.send_message(telegram_id, text, reply_markup=markup)
-        logger.info(f"User send info about registered child: {telegram_id}")
+        logger.info(f"user_id={telegram_id} User send info about registered child")
         bot.answer_callback_query(callback_query.id)
     finally:
         db.close()
@@ -142,13 +143,14 @@ def show_ticket(callback_query):
             bot.send_photo(callback_query.from_user.id, f)
     else:
         bot.answer_callback_query(callback_query.id, "Билет не найден.")
-    logger.info(f"Ticket received: {ticket_path}")
+    logger.info(f"user_id={callback_query.from_user.id} Ticket received: {ticket_path}")
 
 
 @bot.callback_query_handler(func=lambda c: c.data == "buy_ticket")
 def buy_ticket(callback: types.CallbackQuery):
+    logger.info(f"user_id={callback.from_user.id} buy_ticket")
     text = "Выбери программу 👇"
-    markup = gen_program_keyboard()
+    markup = gen_program_keyboard(telegram_id=callback.from_user.id)
 
     bot.edit_message_text(
         chat_id=callback.message.chat.id,
@@ -161,6 +163,7 @@ def buy_ticket(callback: types.CallbackQuery):
 
 @bot.callback_query_handler(func=lambda c: c.data == "about_program")
 def about_program(callback: types.CallbackQuery):
+    logger.info(f"user_id={callback.from_user.id} about_program")
     db = Session()
     try:
         # Получаем список программ из таблицы programs
@@ -215,7 +218,7 @@ def show_about(callback: types.CallbackQuery):
         bot.answer_callback_query(callback.id)
 
     except Exception as e:
-        logger.error(f"Ошибка в show_about: {e}")
+        logger.error(f"user_id={callback.from_user.id} Ошибка в show_about: {e}")
         bot.answer_callback_query(callback.id, "Произошла ошибка.", show_alert=True)
         db.rollback()
 

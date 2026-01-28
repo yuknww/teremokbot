@@ -4,6 +4,7 @@ from telebot.types import Message
 
 from app.loader import bot
 from app.core.config import ADMIN_ID
+from app.bot.middlewares.logger import logger
 from app.db.models import (
     Session,
     User,
@@ -53,9 +54,9 @@ def broadcast_to_parents_by_date(
                 time.sleep(delay)
             except Exception as e:
                 errors += 1
-                print(f"[BROADCAST ERROR] {tg_id}: {e}")
+                logger.error(f"user_id={tg_id} [BROADCAST ERROR] {e}")
 
-        print(f"[BROADCAST DONE] date_id={date_id} | " f"sent={sent} | errors={errors}")
+        logger.info(f"[BROADCAST DONE] date_id={date_id} sent={sent} errors={errors}")
 
     finally:
         session.close()
@@ -68,6 +69,7 @@ def broadcast_to_parents_by_date(
 
 @bot.message_handler(commands=["broadcast"])
 def admin_broadcast_start(message: Message):
+    logger.info(f"user_id={message.from_user.id} broadcast start")
     if not is_admin(message):
         bot.reply_to(message, "Нет доступа")
         return
@@ -116,6 +118,7 @@ def admin_broadcast_get_text(message: Message, date_id: int):
         )
         return
 
+    logger.info(f"user_id={message.from_user.id} broadcast run date_id={date_id}")
     bot.send_message(message.chat.id, f"Запускаю рассылку для date_id={date_id}...")
 
     broadcast_to_parents_by_date(
@@ -123,4 +126,5 @@ def admin_broadcast_get_text(message: Message, date_id: int):
         text=text,
     )
 
+    logger.info(f"user_id={message.from_user.id} broadcast done date_id={date_id}")
     bot.send_message(message.chat.id, "Рассылка завершена")

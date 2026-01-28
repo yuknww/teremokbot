@@ -55,16 +55,15 @@ def get_event_message(date_id: int, session: Session):
         message = f"Ждём вас на Масленицу {day:02d} {month}, в {time_str}"
         return message
     except Exception as e:
-        logger.error(f"Возникла ошибка в определении даты и времени {e}")
+        logger.error(f"Возникла ошибка в определении даты и времени (get_event_message): {e}")
         return None
 
 
 def process_successful_payment(data):
     db = Session()
     try:
-        logger.info("Start successful payment")
-
         uuid = str(data["OrderId"])
+        logger.info(f"Start successful payment order_id={uuid}")
 
         # Получаем регистрацию сразу со связанными объектами
         reg: Registration = (
@@ -93,7 +92,7 @@ def process_successful_payment(data):
         try:
             with open(path_ticket, "rb") as photo:
                 bot.send_photo(user_id, photo)
-                logger.info(f"user_id: {user_id} отправлен билет {uuid}")
+                logger.info(f"user_id={user_id} отправлен билет {uuid}")
         except Exception as e:
             for admin in ADMIN_ID:
                 bot.send_message(
@@ -116,7 +115,7 @@ def process_successful_payment(data):
                 f"❓ Если остались вопросы, можно написать администратору — @yuknww\n\n"
             )
             bot.send_message(user_id, text, parse_mode="Markdown")
-            logger.info(f"user_id: {user_id} отправлена финальная информация")
+            logger.info(f"user_id={user_id} отправлена финальная информация")
 
             # Текст для админов
             new_reg_text = (

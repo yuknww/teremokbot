@@ -58,38 +58,39 @@ def handle_callback():
         order_id = callback_data["OrderId"]
 
         if status == "CONFIRMED":
-            logger.info(f"Payment confirmed for order {order_id}")
+            logger.info(f"Payment confirmed order_id={order_id}")
             try:
                 for admin in ADMIN_ID:
                     bot.send_message(
                         admin,
                         f"✅ Получена оплата\nPaymentId: {callback_data["PaymentId"]}\nOrderID: {order_id}",
                     )
-                logger.info(f"Payment confirmed for order {order_id}")
                 process_successful_payment(callback_data)
             except Exception as e:
-                logger.error(f"Error processing CONFIRMED: {str(e)}")
+                logger.error(f"Error processing CONFIRMED order_id={order_id}: {str(e)}")
             return "OK", 200
 
         elif status in ["CANCELED", "REVERSED", "REJECTED"]:
-            logger.info(f"Payment canceled for order {order_id}")
+            logger.info(f"Payment canceled order_id={order_id}")
             try:
                 reg = db.query(Registration).filter_by(ticket_code=order_id).first()
                 user_id = reg.child.user.telegram_id
+                logger.info(f"user_id={user_id} Payment canceled, notifying")
                 bot.send_message(
                     user_id,
                     "⚠️ Оплата отменена. Пожалуйста, начните регистрацию заново",
                 )
                 delete_registration_by_ticket(db=db, ticket_code=order_id)
             except Exception as e:
-                logger.error(f"Error processing CANCELED: {str(e)}")
+                logger.error(f"Error processing CANCELED order_id={order_id}: {str(e)}")
             return "OK", 200
 
         elif status == "REFUNDED":
-            logger.info(f"Refund processed for order {order_id}")
+            logger.info(f"Refund processed order_id={order_id}")
             try:
                 reg = db.query(Registration).filter_by(ticket_code=order_id).first()
                 user_id = reg.child.user.telegram_id
+                logger.info(f"user_id={user_id} Refund, notifying")
                 text = (
                     f"❌ Регистрация {order_id} отменена.\n\n"
                     "Если вы не отменяли регистрацию, свяжитесь с администратором - @yuknww"
@@ -97,11 +98,11 @@ def handle_callback():
                 bot.send_message(user_id, text)
                 delete_registration_by_ticket(db=db, ticket_code=order_id)
             except Exception as e:
-                logger.error(f"Error processing REFUNDED: {str(e)}")
+                logger.error(f"Error processing REFUNDED order_id={order_id}: {str(e)}")
             return "OK", 200
 
         elif status == "AUTHORIZED":
-            logger.info(f"Authorized payment {order_id}")
+            logger.info(f"Authorized payment order_id={order_id}")
             return "OK", 200
 
         else:

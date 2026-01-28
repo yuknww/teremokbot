@@ -3,7 +3,7 @@ from telebot import types
 from app.bot.middlewares.logger import logger
 
 
-def gen_program_keyboard():
+def gen_program_keyboard(telegram_id: int = None):
     db = Session()
     try:
         # Получаем список программ из таблицы programs
@@ -19,7 +19,8 @@ def gen_program_keyboard():
                 )
             )
         markup.add(types.InlineKeyboardButton("Назад", callback_data="main_menu"))
-        logger.info(f"Created {len(programs)} programs")
+        uid = f"user_id={telegram_id} " if telegram_id is not None else ""
+        logger.info(f"{uid}Created {len(programs)} programs")
         return markup
     finally:
         db.close()

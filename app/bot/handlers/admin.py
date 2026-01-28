@@ -1,11 +1,13 @@
 from app.loader import bot
 from app.core.config import ADMIN_ID
 from app.db.models import DateSlot, Session, Registration
+from app.bot.middlewares.logger import logger
 
 
 @bot.message_handler(func=lambda m: m.text and m.text.lower() == "статистика")
 def stats_handler(message):
     telegram_id = message.from_user.id
+    logger.info(f"user_id={telegram_id} stats request")
 
     # Проверка прав администратора
     if telegram_id not in ADMIN_ID:
@@ -44,6 +46,7 @@ def stats_handler(message):
             )
 
         bot.send_message(telegram_id, text, parse_mode="Markdown")
+        logger.info(f"user_id={telegram_id} stats sent")
 
     finally:
         db.close()

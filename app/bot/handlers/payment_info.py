@@ -21,7 +21,7 @@ def send_payment_info(user: User, child: Child, uuid):
         reg: Registration = (
             db.query(Registration).filter(Registration.child_id == child.id).first()
         )
-        logger.info(f"Start payment info for {user}")
+        logger.info(f"user_id={user.telegram_id} Start payment info")
         try:
             payment_url = init(
                 order_id=int(uuid),
@@ -30,7 +30,7 @@ def send_payment_info(user: User, child: Child, uuid):
                 email=user.email,
             )
         except Exception as e:
-            logger.error(f"Failed init payment: {e} {e.args}")
+            logger.error(f"user_id={user.telegram_id} Failed init payment: {e} {e.args}")
 
         text = (
             f"Чтобы завершить регистрацию оплатите билет по кнопке ниже\n\n"
@@ -47,10 +47,10 @@ def send_payment_info(user: User, child: Child, uuid):
         )
         reg.payment_status = "waiting_payment"
         logger.info(
-            f"user_id: {user.telegram_id} отправлена информация об оплате, бот ожидает оплату"
+            f"user_id={user.telegram_id} отправлена информация об оплате, бот ожидает оплату"
         )
     except Exception as err:
-        logger.error(f"Send payment info error: {err.args}")
+        logger.error(f"user_id={user.telegram_id} Send payment info error: {err.args}")
         bot.send_message(
             user.telegram_id, "Возникла ошибка, свяжитесь с администратором @yuknww"
         )

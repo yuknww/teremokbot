@@ -30,12 +30,13 @@ def return_data_program(call: types.CallbackQuery):
         program_id = int(call.data.split("_")[1])
         user = get_user_by_telegram_id(db=db, telegram_id=call.from_user.id)
         user.data = {**(user.data or {}), "program_id": program_id}
-        logger.info(f"User choose program {program_id}")
+        uid = call.from_user.id
+        logger.info(f"user_id={uid} User choose program {program_id}")
         db.commit()
         # Запрашиваем даты для программы
-        logger.info(f"Getting dates")
+        logger.info(f"user_id={uid} Getting dates")
         dates = db.query(DateSlot).filter(DateSlot.program_id == program_id).all()
-        logger.info(f"Filter dates")
+        logger.info(f"user_id={uid} Filter dates")
         # Фильтруем только свободные даты
         available_dates = [date for date in dates if date.booked_count < date.capacity]
         menu = types.InlineKeyboardMarkup()
@@ -48,10 +49,10 @@ def return_data_program(call: types.CallbackQuery):
                 reply_markup=menu,
             )
             return
-        logger.info(f"Available dates {available_dates}")
+        logger.info(f"user_id={uid} Available dates {available_dates}")
         # Создаем inline-кнопки для доступных дат
         markup = types.InlineKeyboardMarkup()
-        logger.info("Parsing dates")
+        logger.info(f"user_id={uid} Parsing dates")
         for date in available_dates:
             dt = datetime.strptime(f"{date.date} {date.time}", "%Y-%m-%d %H:%M")
             display_text = dt.strftime("%d.%m.%Y %H:%M")
@@ -69,9 +70,10 @@ def return_data_program(call: types.CallbackQuery):
             text=f"Вы выбрали: {program_name}\n\nВыберите свободную дату для этой программы:",
             reply_markup=markup,
         )
-        logger.info(f"User sends available date for {program_name}")
+        logger.info(f"user_id={uid} User sends available date for {program_name}")
     except Exception as e:
-        logger.error(f"Возникла ошибка в возврате дат {e} {e.args}")
+        uid = getattr(call, "from_user", None) and getattr(call.from_user, "id", None) or "?"
+        logger.error(f"user_id={uid} Возникла ошибка в возврате дат {e} {e.args}")
         db.rollback()
     finally:
         db.close()
@@ -81,6 +83,7 @@ def return_data_program(call: types.CallbackQuery):
 def choose_date(call: types.CallbackQuery):
     db = Session()
     bot.answer_callback_query(callback_query_id=call.id)
+    uid = call.from_user.id
     try:
         date_id = int(call.data.split("_")[1])
         date = db.query(DateSlot).get(date_id)
@@ -97,14 +100,14 @@ def choose_date(call: types.CallbackQuery):
             bot.send_message(
                 call.message.chat.id, "Введите Ваше Имя и Фамилию (имя взрослого):"
             )
-            logger.info(f"Send question about name")
+            logger.info(f"user_id={uid} Send question about name")
             update_user_state(db=db, telegram_id=call.from_user.id, state="parent_name")
         else:
             show_children_for_registration(
                 call.message.chat.id, call.from_user.id, call
             )
     except Exception as e:
-        logger.error(f"Возникла ошибка choose date {e.args}")
+        logger.error(f"user_id={uid} Возникла ошибка choose date {e.args}")
         db.rollback()
     finally:
         db.close()
@@ -120,12 +123,12 @@ def parent_name(message: types.Message):
                 message.chat.id,
                 "Произошла ошибка, попробуйте ещё раз или свяжитесь с администратором @yuknww",
             )
-        logger.info(f"User name {name}")
+        logger.info(f"user_id={message.from_user.id} User name {name}")
         bot.send_message(message.chat.id, "Введите ваш номер телефона:")
-        logger.info(f"Send question about phone")
+        logger.info(f"user_id={message.from_user.id} Send question about phone")
         update_user_state(db=db, telegram_id=message.from_user.id, state="parent_phone")
     except Exception as e:
-        logger.error(f"Возникла ошибка parent name {e.args}")
+        logger.error(f"user_id={message.from_user.id} Возникла ошибка parent name {e.args}")
         db.rollback()
     finally:
         db.close()
@@ -140,7 +143,7 @@ def parent_phone(message: types.Message):
             update_user_phone(db=db, telegram_id=message.from_user.id, phone=phone)
             is None
         ):
-            logger.info(f"User phone {phone}")
+            logger.info(f"user_id={message.from_user.id} User phone {phone}")
             bot.send_message(
                 message.chat.id,
                 "Произошла ошибка, попробуйте ещё раз или свяжитесь с администратором @yuknww",
@@ -149,9 +152,9 @@ def parent_phone(message: types.Message):
         bot.send_message(
             message.chat.id, "Укажите адрес электронной почты для отправки чека:"
         )
-        logger.info(f"Send question about email")
+        logger.info(f"user_id={message.from_user.id} Send question about email")
     except Exception as e:
-        logger.error(f"Error parent phone {e.args}")
+        logger.error(f"user_id={message.from_user.id} Error parent phone {e.args}")
         db.rollback()
     finally:
         db.close()
@@ -178,12 +181,12 @@ def handle_email(message: types.Message):
             user.email = email
             db.commit()
             logger.info(
-                f"user_id: {user_id}/{message.from_user.username} указал email {email}"
+                f"user_id={user_id} указал email {email}"
             )
             show_children_for_registration(message.chat.id, message.from_user.id)
         except Exception as e:
             logger.error(
-                f"Возникла ошибка при email. Ошибка {e}, Данные:\n user_id: {user_id}/{message.from_user.username}\n data: {message.text}"
+                f"user_id={user_id} Возникла ошибка при email: {e}, data={message.text}"
             )
             db.rollback()
     finally:
@@ -192,8 +195,9 @@ def handle_email(message: types.Message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "menu")
 def choose_program(call: types.CallbackQuery):
+    logger.info(f"user_id={call.from_user.id} choose_program (menu)")
     text = "Выбери программу 👇"
-    markup = gen_program_keyboard()
+    markup = gen_program_keyboard(telegram_id=call.from_user.id)
 
     bot.edit_message_text(
         chat_id=call.message.chat.id,

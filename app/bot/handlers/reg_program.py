@@ -49,7 +49,7 @@ def registration_program(user: User, child: Child):
                 send_payment_info(user, child, uuid)
                 return
             logger.info(
-                f"Ребёнок уже зарегистрирован child_id={child.id}, date_id={date_id}"
+                f"user_id={user.telegram_id} Ребёнок уже зарегистрирован child_id={child.id}, date_id={date_id}"
             )
             bot.send_message(user.telegram_id, f"Ребёнок уже зарегистрирован")
             return  # выходим, новые записи не создаём
@@ -64,16 +64,16 @@ def registration_program(user: User, child: Child):
         )
         db.add(new_reg)
         db.commit()
-        logger.info(f"Создана регистрация child_id={child.id}, ticket_code={uuid}")
+        logger.info(f"user_id={user.telegram_id} Создана регистрация child_id={child.id}, ticket_code={uuid}")
 
         # Отправка информации о платеже
         send_payment_info(user, child, uuid)
 
     except IntegrityError as e:
         db.rollback()
-        logger.error(f"IntegrityError при добавлении в registrations: {e}")
+        logger.error(f"user_id={user.telegram_id} IntegrityError при добавлении в registrations: {e}")
     except Exception as e:
         db.rollback()
-        logger.error(f"Ошибка при регистрации: {e}")
+        logger.error(f"user_id={user.telegram_id} Ошибка при регистрации: {e}")
     finally:
         db.close()

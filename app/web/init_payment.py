@@ -4,7 +4,7 @@ from app.core.config import TERMINAL_KEY, COST
 from app.bot.middlewares.logger import logger
 
 
-def get_qr(payment_id):
+def get_qr(payment_id, user_id=None):
     data = {
         "TerminalKey": TERMINAL_KEY,
         "PaymentId": payment_id,
@@ -21,11 +21,13 @@ def get_qr(payment_id):
     if response.status_code == 200:
         response_data = response.json()
         qr_data = response_data.get("Data")
-        logger.info(f"Сформирован QR СБП {qr_data}")
+        uid = f"user_id={user_id} " if user_id is not None else ""
+        logger.info(f"{uid}Сформирован QR СБП {qr_data}")
         return qr_data
     else:
+        uid = f"user_id={user_id} " if user_id is not None else ""
         logger.error(
-            f"Ошибка при формировании QR, {response.status_code}/{response.text}"
+            f"{uid}Ошибка при формировании QR, {response.status_code}/{response.text}"
         )
         return None
 
@@ -74,18 +76,18 @@ def init(order_id: int, phone, user_id, email) -> str:
 
         if not payment_id:
             logger.error(
-                f"Нет PaymentId в ответе TBank: {response_data}, order_id: {order_id}"
+                f"user_id={user_id} Нет PaymentId в ответе TBank: {response_data}, order_id: {order_id}"
             )
             return "Error"
 
-        payment_url = get_qr(payment_id)
+        payment_url = get_qr(payment_id, user_id=user_id)
         if not payment_url:
-            logger.error(f"Не удалось получить QR для PaymentId={payment_id}")
+            logger.error(f"user_id={user_id} Не удалось получить QR для PaymentId={payment_id}")
             return "Error"
 
-        logger.info(f"USER_ID: {user_id} Сформирована ссылка на оплату {response_data}")
+        logger.info(f"user_id={user_id} Сформирована ссылка на оплату {response_data}")
         return payment_url
 
     except requests.RequestException as e:
-        logger.error(f"Ошибка при инициализации платежа: {e}")
+        logger.error(f"user_id={user_id} Ошибка при инициализации платежа: {e}")
         return "Error"
