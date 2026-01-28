@@ -18,7 +18,7 @@ def qrcodegen(unique_code):
     qr.make(fit=True)
 
     qr_img = qr.make_image(fill_color="black", back_color="white")
-    qr_img = qr_img.resize((900, 900))
+    qr_img = qr_img.resize((390, 390))
 
     # Шаблон билета (относительно этого файла)
     template_path = os.path.join(
@@ -27,7 +27,7 @@ def qrcodegen(unique_code):
     ticket = Image.open(template_path)
 
     # Вставка QR-кода на шаблон
-    ticket.paste(qr_img, (915, 800))
+    ticket.paste(qr_img, (450, 350))
 
     # Папка tickets в корне проекта
     tickets_dir = os.path.join(os.getcwd(), "tickets")
