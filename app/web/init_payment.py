@@ -34,7 +34,7 @@ def get_qr(payment_id, user_id=None):
 
 def init(order_id: int, phone, user_id, email) -> str:
     amount = COST * 100
-    description = "Оплата билета на новогоднее мероприятие"
+    description = "Оплата билета на масленицу"
 
     data = {
         "TerminalKey": TERMINAL_KEY,
@@ -52,7 +52,7 @@ def init(order_id: int, phone, user_id, email) -> str:
             "Taxation": "usn_income",
             "Items": [
                 {
-                    "Name": "Оплата билета на новогоднее мероприятие",
+                    "Name": "Оплата билета на масленицу",
                     "Price": amount,
                     "Quantity": 1,
                     "Amount": amount,
