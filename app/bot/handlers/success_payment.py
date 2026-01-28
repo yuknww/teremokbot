@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from app.bot.middlewares.logger import logger
 from app.bot.utils.qr import qrcodegen
@@ -24,6 +25,14 @@ RUS_MONTHS = {
 
 
 from datetime import datetime
+
+
+def escape_markdown(text: str) -> str:
+    """
+    Экранирует все спецсимволы для MarkdownV2
+    """
+    escape_chars = r"_*[]()~`>#+-=|{}.!"
+    return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)
 
 
 def get_event_message(date_id: int, session: Session):
@@ -55,7 +64,9 @@ def get_event_message(date_id: int, session: Session):
         message = f"Ждём вас на Масленицу {day:02d} {month}, в {time_str}"
         return message
     except Exception as e:
-        logger.error(f"Возникла ошибка в определении даты и времени (get_event_message): {e}")
+        logger.error(
+            f"Возникла ошибка в определении даты и времени (get_event_message): {e}"
+        )
         return None
 
 
@@ -106,15 +117,20 @@ def process_successful_payment(data):
             )
         finally:
             # Сообщение пользователю
+            event_message = get_event_message(date_id=reg.date_id, session=db)
+            if event_message is None:
+                event_message = "Дата и время мероприятия пока недоступны"
+
             text = (
                 f"Всё готово!\n"
                 f"Сохраните свой билет — его нужно будет показать на входе\n\n"
                 f"‼️*Детям нужно взять сменную обувь, взрослым - бахилы*\n\n"
-                f"{get_event_message(date_id=reg.date_id, session=db)}\n\n"
+                f"{event_message}\n\n"
                 f"🔔 Информация о мероприятии в нашем Telegram-канале: @teremok_vyazma\n\n"
                 f"❓ Если остались вопросы, можно написать администратору — @yuknww\n\n"
             )
-            bot.send_message(user_id, text, parse_mode="Markdown")
+
+            bot.send_message(user_id, escape_markdown(text), parse_mode="MarkdownV2")
             logger.info(f"user_id={user_id} отправлена финальная информация")
 
             # Текст для админов
