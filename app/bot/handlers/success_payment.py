@@ -23,29 +23,39 @@ RUS_MONTHS = {
 }
 
 
+from datetime import datetime
+
+
 def get_event_message(date_id: int, session: Session):
     try:
         date_slot = session.query(DateSlot).filter(DateSlot.id == date_id).first()
-        date_slot.booked_count += 1
-        session.commit()
         if not date_slot:
             return "Дата не найдена"
 
-        # дата
-        dt = date_slot.date  # datetime.date
-        if isinstance(dt, str):
-            dt = datetime.strptime(dt, "%Y-%m-%d").date()
+        # увеличиваем booked_count
+        date_slot.booked_count += 1
+        session.commit()
+
+        # дата (строка 'YYYY-MM-DD')
+        dt_str = date_slot.date
+        dt = datetime.strptime(dt_str, "%Y-%m-%d")  # превращаем в datetime
         day = dt.day
         month = RUS_MONTHS[dt.month]
 
-        # время
-        t = date_slot.time  # datetime.time
-        time_str = t.strftime("%H:%M")  # форматируем как 'HH:MM'
+        # время (строка 'HH:MM' или 'HH:MM:SS')
+        t_str = date_slot.time
+        # приводим к datetime.time
+        t = (
+            datetime.strptime(t_str, "%H:%M").time()
+            if len(t_str) == 5
+            else datetime.strptime(t_str, "%H:%M:%S").time()
+        )
+        time_str = t.strftime("%H:%M")  # форматируем для сообщения
 
-        message = f"Ждём вас на Шоколадной Фабрике дедушки мороза {day:02d} {month}, в {time_str}"
+        message = f"Ждём вас на Масленицу {day:02d} {month}, в {time_str}"
         return message
     except Exception as e:
-        logger.error(f"Возникла ошибка в опреедлнии даты и времени {e}")
+        logger.error(f"Возникла ошибка в определении даты и времени {e}")
         return None
 
 
@@ -100,6 +110,7 @@ def process_successful_payment(data):
             text = (
                 f"Всё готово!\n"
                 f"Сохраните свой билет — его нужно будет показать на входе\n\n"
+                f"‼️*Детям нужно взять сменную обувь, взрослым - бахилы*"
                 f"{get_event_message(date_id=reg.date_id, session=db)}\n\n"
                 f"🔔 Информация о мероприятии в нашем Telegram-канале: @teremok_vyazma\n\n"
                 f"❓ Если остались вопросы, можно написать администратору — @yuknww\n\n"
