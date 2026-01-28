@@ -36,8 +36,8 @@ def stats_handler(message):
             )
 
             program_name = ds.program.name
-            date_str = ds.date.strftime("%d.%m.%Y")
-            time_str = ds.time.strftime("%H:%M")
+            date_str = ds.date
+            time_str = ds.time
 
             text += (
                 f"🎄 *{program_name}*\n"
