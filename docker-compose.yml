@@ -6,8 +6,6 @@ services:
     container_name: my_bot
     command: python main.py
     env_file: .env
-    depends_on:
-      - db
     volumes:
       - .:/app
       - ./tickets:/app/tickets
@@ -19,23 +17,10 @@ services:
     container_name: my_api
     command: gunicorn -w 4 -b 0.0.0.0:5000 app:app
     env_file: .env
-    depends_on:
-      - db
     volumes:
       - .:/app
     ports:
       - "5000:5000"
-    networks:
-      - my_network
-
-  db:
-    image: postgres:16
-    container_name: my_postgres
-    env_file: .env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - my_network
 
@@ -44,15 +29,12 @@ services:
     container_name: check
     command: python check_reg.py
     env_file: .env
-    depends_on:
-      - db
     volumes:
       - .:/app
     networks:
       - my_network
 
-volumes:
-  postgres_data:
+
 
 networks:
   my_network:
