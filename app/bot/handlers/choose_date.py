@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.bot.handlers.reg_children import show_children_for_registration
 from app.bot.keyboards.program_keyboard import gen_program_keyboard
 from app.bot.middlewares.logger import logger
@@ -31,8 +33,9 @@ def return_data_program(call: types.CallbackQuery):
         logger.info(f"User choose program {program_id}")
         db.commit()
         # Запрашиваем даты для программы
+        logger.info(f"Getting dates")
         dates = db.query(DateSlot).filter(DateSlot.program_id == program_id).all()
-
+        logger.info(f"Filter dates")
         # Фильтруем только свободные даты
         available_dates = [date for date in dates if date.booked_count < date.capacity]
         menu = types.InlineKeyboardMarkup()
@@ -48,11 +51,10 @@ def return_data_program(call: types.CallbackQuery):
         logger.info(f"Available dates {available_dates}")
         # Создаем inline-кнопки для доступных дат
         markup = types.InlineKeyboardMarkup()
+        logger.info("Parsing dates")
         for date in available_dates:
-            # Объединяем дату и время из разных колонок
-            display_text = (
-                f"{date.date.strftime('%d.%m.%Y')} {date.time.strftime('%H:%M')}"
-            )
+            dt = datetime.strptime(f"{date.date} {date.time}", "%Y-%m-%d %H:%M")
+            display_text = dt.strftime("%d.%m.%Y %H:%M")
             markup.add(
                 types.InlineKeyboardButton(
                     display_text, callback_data=f"date_{date.id}"
@@ -69,7 +71,7 @@ def return_data_program(call: types.CallbackQuery):
         )
         logger.info(f"User sends available date for {program_name}")
     except Exception as e:
-        logger.error(f"Возникла ошибка в возврате дат {e.args}")
+        logger.error(f"Возникла ошибка в возврате дат {e} {e.args}")
         db.rollback()
     finally:
         db.close()

@@ -1,3 +1,4 @@
+import sqlite3
 import time
 from datetime import datetime
 
@@ -17,7 +18,7 @@ from sqlalchemy import (
     create_engine,
 )
 from sqlalchemy.orm import relationship, declarative_base, sessionmaker
-from app.core.config import DATABASE_URL, DB_USER, DB_PASSWORD, DB_NAME
+from app.core.config import DATABASE_URL
 
 Base = declarative_base()
 engine = create_engine(DATABASE_URL)
@@ -90,11 +91,11 @@ class DateSlot(Base):
 
     id = Column(Integer, primary_key=True)
     program_id = Column(Integer, ForeignKey("programs.id", ondelete="CASCADE"))
-    date = Column(Date, nullable=False)
-    time = Column(Time, nullable=False)
+    date = Column(String, nullable=False)
+    time = Column(String, nullable=False)
     capacity = Column(Integer, nullable=False)
     booked_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
 
     program = relationship("Program", back_populates="dates")
     registrations = relationship(

@@ -6,15 +6,11 @@ if not find_dotenv():
 else:
     load_dotenv()
 
-COST = 1700
+COST = 1500
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 CHECK_REG_TOKEN = os.getenv("CHECK_REG_TOKEN")
 TERMINAL_KEY = os.getenv("TERMINAL_KEY")
 PASSWORD = os.getenv("PASSWORD")
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_NAME = os.getenv("POSTGRES_DB")
-
 
 ADMIN_ID = [734641318, 503513224]
